@@ -1,19 +1,144 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Hugging Face Space Embed</title>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dog/Cat Classifier</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/gradient-client/1.0.0/index.min.js"></script>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #f5f5f5;
+        }
+        .container {
+            background-color: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        .upload-section {
+            text-align: center;
+            padding: 20px;
+            border: 2px dashed #ccc;
+            border-radius: 4px;
+            margin-bottom: 20px;
+        }
+        #preview {
+            max-width: 300px;
+            margin: 20px auto;
+            display: none;
+        }
+        #result {
+            margin-top: 20px;
+            padding: 15px;
+            border-radius: 4px;
+            display: none;
+        }
+        .loading {
+            display: none;
+            text-align: center;
+            margin: 20px 0;
+        }
+        button {
+            background-color: #007bff;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+        button:hover {
+            background-color: #0056b3;
+        }
+    </style>
 </head>
 <body>
-  <h1>AI Model Embedded from Hugging Face</h1>
-  
-  <iframe 
-    src="https://huggingface.co/spaces/virej1/testing_classifier" 
-    width="100%" 
-    height="600" 
-    style="border: none;">
-  </iframe>
-  
+    <div class="container">
+        <h1>Dog/Cat Classifier</h1>
+        <div class="upload-section">
+            <input type="file" id="imageInput" accept="image/*" style="display: none">
+            <button onclick="document.getElementById('imageInput').click()">Choose Image</button>
+            <p>or drag and drop an image here</p>
+        </div>
+        <img id="preview" alt="Preview">
+        <div class="loading">
+            Analyzing image...
+        </div>
+        <div id="result"></div>
+    </div>
+
+    <script>
+        const uploadSection = document.querySelector('.upload-section');
+        const preview = document.getElementById('preview');
+        const result = document.getElementById('result');
+        const loading = document.querySelector('.loading');
+        const imageInput = document.getElementById('imageInput');
+
+        // Handle drag and drop
+        uploadSection.addEventListener('dragover', (e) => {
+            e.preventDefault();
+            uploadSection.style.borderColor = '#007bff';
+        });
+
+        uploadSection.addEventListener('dragleave', () => {
+            uploadSection.style.borderColor = '#ccc';
+        });
+
+        uploadSection.addEventListener('drop', (e) => {
+            e.preventDefault();
+            uploadSection.style.borderColor = '#ccc';
+            const file = e.dataTransfer.files[0];
+            if (file && file.type.startsWith('image/')) {
+                handleImage(file);
+            }
+        });
+
+        // Handle file input
+        imageInput.addEventListener('change', (e) => {
+            const file = e.target.files[0];
+            if (file) {
+                handleImage(file);
+            }
+        });
+
+        function handleImage(file) {
+            // Show preview
+            const reader = new FileReader();
+            reader.onload = (e) => {
+                preview.src = e.target.result;
+                preview.style.display = 'block';
+            };
+            reader.readAsDataURL(file);
+
+            // Analyze image
+            analyzeImage(file);
+        }
+
+        async function analyzeImage(file) {
+            try {
+                loading.style.display = 'block';
+                result.style.display = 'none';
+
+                const client = await Client.connect("virej1/testing_classifier");
+                const prediction = await client.predict("/predict", { 
+                    img: file
+                });
+
+                loading.style.display = 'none';
+                result.style.display = 'block';
+                result.innerHTML = `
+                    <h3>Result:</h3>
+                    <p>${prediction.data}</p>
+                `;
+            } catch (error) {
+                loading.style.display = 'none';
+                result.style.display = 'block';
+                result.innerHTML = `<p style="color: red;">Error: ${error.message}</p>`;
+            }
+        }
+    </script>
 </body>
 </html>
